@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_comine"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+
+    tools:context="com.camera2demo.Comine">
+
+    <com.camera2demo.AutoFitTextureView
+        android:layout_width="wrap_content"
+        android:layout_height="200dp"
+        android:id="@+id/textureView1"
+        android:layout_marginTop="20dp"
+        android:layout_below="@+id/textureView"
+        android:layout_marginBottom="20dp" />
+
+    <Button
+        android:text="Button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:id="@+id/button" />
+
+    <com.camera2demo.AutoFitTextureView
+        android:layout_width="wrap_content"
+        android:layout_height="200dp"
+        android:id="@+id/textureView"
+
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true" />
+</RelativeLayout>
