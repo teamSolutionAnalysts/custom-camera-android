@@ -8,19 +8,17 @@
     tools:context="com.camera2demo.CaptureImage">
 
 
-    <TextureView
+    <com.camera2demo.AutoFitTextureView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true"
         android:id="@+id/tvRecordVideo"
-        android:layout_marginTop="20dp"
-        android:layout_marginBottom="20dp"
-        android:layout_above="@+id/btnRecord"/>
+        />
 
     <Button
         android:text="Record"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"

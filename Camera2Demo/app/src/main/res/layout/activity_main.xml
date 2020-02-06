@@ -10,9 +10,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:id="@+id/textureView"
-        android:layout_above="@+id/button"
-        android:layout_marginBottom="20dp" />
+        android:id="@+id/textureView" />
 
     <Button
         android:text="Button"

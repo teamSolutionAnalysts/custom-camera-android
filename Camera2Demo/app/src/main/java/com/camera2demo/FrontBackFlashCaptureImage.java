@@ -18,6 +18,7 @@ import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.ImageReader;
+import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -35,14 +36,16 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import static android.os.Environment.DIRECTORY_PICTURES;
 
-public class FrontBackFlashCaptureImage extends AppCompatActivity implements View.OnClickListener{
+public class FrontBackFlashCaptureImage extends AppCompatActivity implements View.OnClickListener {
 
     private AutoFitTextureView mTextureView;
     private Button btnRotate;
@@ -56,10 +59,11 @@ public class FrontBackFlashCaptureImage extends AppCompatActivity implements Vie
 
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
-        ORIENTATIONS.append(Surface.ROTATION_90,0);
+        ORIENTATIONS.append(Surface.ROTATION_90, 0);
         ORIENTATIONS.append(Surface.ROTATION_180, 270);
         ORIENTATIONS.append(Surface.ROTATION_270, 180);
     }
+
     static {
         INVERSE_ORIENTATIONS.append(Surface.ROTATION_0, 270);
         INVERSE_ORIENTATIONS.append(Surface.ROTATION_90, 180);
@@ -110,7 +114,7 @@ public class FrontBackFlashCaptureImage extends AppCompatActivity implements Vie
         btnRotate.setOnClickListener(this);
         btnCapture.setOnClickListener(this);
 
-        mFile = new File(Environment.getExternalStoragePublicDirectory(DIRECTORY_PICTURES)+"/"+System.currentTimeMillis()+".jpg");
+        mFile = new File(Environment.getExternalStoragePublicDirectory(DIRECTORY_PICTURES) + "/" + System.currentTimeMillis() + ".jpg");
 
         mTextureView = (AutoFitTextureView) findViewById(R.id.tvCapture);
 
@@ -127,6 +131,7 @@ public class FrontBackFlashCaptureImage extends AppCompatActivity implements Vie
             mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
         }
     }
+
     @Override
     public void onPause() {
         closeCamera();
@@ -136,18 +141,18 @@ public class FrontBackFlashCaptureImage extends AppCompatActivity implements Vie
 
     @Override
     public void onClick(View v) {
-        if(v.getId()==R.id.btnCapture){
+        if (v.getId() == R.id.btnCapture) {
             takePicture();
-        }else {
-            if(cameraType==0){
+        } else {
+            if (cameraType == 0) {
                 closeCamera();
-                cameraType=1;
+                cameraType = 1;
                 btnRotate.setText("Back");
                 openCamera(mTextureView.getWidth(), mTextureView.getHeight());
 
-            }else {
+            } else {
                 closeCamera();
-                cameraType=0;
+                cameraType = 0;
                 btnRotate.setText("Front");
                 openCamera(mTextureView.getWidth(), mTextureView.getHeight());
             }
@@ -155,6 +160,7 @@ public class FrontBackFlashCaptureImage extends AppCompatActivity implements Vie
         }
 
     }
+
     private void takePicture() {
         try {
             // This is how to tell the camera to lock focus.
@@ -168,6 +174,7 @@ public class FrontBackFlashCaptureImage extends AppCompatActivity implements Vie
             e.printStackTrace();
         }
     }
+
     private void startBackgroundThread() {
         mBackgroundThread = new HandlerThread("CameraBackground");
         mBackgroundThread.start();
@@ -195,9 +202,6 @@ public class FrontBackFlashCaptureImage extends AppCompatActivity implements Vie
 
         @Override
         public void onSurfaceTextureSizeChanged(SurfaceTexture texture, int width, int height) {
-            if (null != mTextureView || null == mPreviewSize) {
-                mTextureView.setTransform(Utils.configureTransform(width, height,mPreviewSize,FrontBackFlashCaptureImage.this));
-            }
         }
 
         @Override
@@ -218,11 +222,11 @@ public class FrontBackFlashCaptureImage extends AppCompatActivity implements Vie
         }
         setUpCameraOutputs(width, height);
 //        configureTransform(width, height);
-        if (null != mTextureView || null == mPreviewSize) {
-            mTextureView.setTransform(Utils.configureTransform(width, height,mPreviewSize,FrontBackFlashCaptureImage.this));
-        }
+        /*if (null != mTextureView || null == mPreviewSize) {
+            mTextureView.setTransform(Utils.configureTransform(width, height, mPreviewSize, FrontBackFlashCaptureImage.this));
+        }*/
 
-        CameraManager manager = (CameraManager)getSystemService(Context.CAMERA_SERVICE);
+        CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         try {
             if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 throw new RuntimeException("Time out waiting to lock camera opening.");
@@ -261,105 +265,80 @@ public class FrontBackFlashCaptureImage extends AppCompatActivity implements Vie
         }
 
     };
+
     private void setUpCameraOutputs(int width, int height) {
 
-        CameraManager manager = (CameraManager)getSystemService(Context.CAMERA_SERVICE);
+        CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         try {
 
 
-                mCameraId = manager.getCameraIdList()[cameraType];
-                CameraCharacteristics characteristics
-                        = manager.getCameraCharacteristics(mCameraId);
+            mCameraId = manager.getCameraIdList()[cameraType];
+            CameraCharacteristics characteristics
+                    = manager.getCameraCharacteristics(mCameraId);
 
-                // We don't use a front facing camera in this sample.
+            // We don't use a front facing camera in this sample.
 //                Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
 //                if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT) {
 //                    continue;
 //                }
 
-                StreamConfigurationMap map = characteristics.get(
-                        CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+            StreamConfigurationMap map = characteristics.get(
+                    CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
 //                if (map == null) {
 //                    continue;
 //                }
 
-                // For still image captures, we use the largest available size.
-                Size largest = Collections.max(
-                        Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
-                        new Utils.CompareSizesByArea());
-                mImageReader = ImageReader.newInstance(largest.getWidth(), largest.getHeight(),
-                        ImageFormat.JPEG, /*maxImages*/2);
-                mImageReader.setOnImageAvailableListener(
-                        mOnImageAvailableListener, mBackgroundHandler);
+            // For still image captures, we use the largest available size.
+            Size largest = Collections.max(
+                    Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
+                    new Utils.CompareSizesByArea());
+            mImageReader = ImageReader.newInstance(largest.getWidth(), largest.getHeight(),
+                    ImageFormat.JPEG, /*maxImages*/2);
+            mImageReader.setOnImageAvailableListener(
+                    mOnImageAvailableListener, mBackgroundHandler);
 
-                // Find out if we need to swap dimension to get the preview size relative to sensor
-                // coordinate.
-                int displayRotation =getWindowManager().getDefaultDisplay().getRotation();
-                //noinspection ConstantConditions
-                mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
-                boolean swappedDimensions = false;
-                switch (displayRotation) {
-                    case Surface.ROTATION_0:
-                    case Surface.ROTATION_180:
-                        if (mSensorOrientation == 90 || mSensorOrientation == 270) {
-                            swappedDimensions = true;
-                        }
-                        break;
-                    case Surface.ROTATION_90:
-                    case Surface.ROTATION_270:
-                        if (mSensorOrientation == 0 || mSensorOrientation == 180) {
-                            swappedDimensions = true;
-                        }
-                        break;
-                    default:
-                        Log.e(TAG, "Display rotation is invalid: " + displayRotation);
-                }
+            // Find out if we need to swap dimension to get the preview size relative to sensor
+            // coordinate.
+            int displayRotation = getWindowManager().getDefaultDisplay().getRotation();
+            //noinspection ConstantConditions
+            mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+            boolean swappedDimensions = false;
+            switch (displayRotation) {
+                case Surface.ROTATION_0:
+                case Surface.ROTATION_180:
+                    if (mSensorOrientation == 90 || mSensorOrientation == 270) {
+                        swappedDimensions = true;
+                    }
+                    break;
+                case Surface.ROTATION_90:
+                case Surface.ROTATION_270:
+                    if (mSensorOrientation == 0 || mSensorOrientation == 180) {
+                        swappedDimensions = true;
+                    }
+                    break;
+                default:
+                    Log.e(TAG, "Display rotation is invalid: " + displayRotation);
+            }
 
-                Point displaySize = new Point();
-                getWindowManager().getDefaultDisplay().getSize(displaySize);
-                int rotatedPreviewWidth = width;
-                int rotatedPreviewHeight = height;
-                int maxPreviewWidth = displaySize.x;
-                int maxPreviewHeight = displaySize.y;
+            Size mVideoSize = chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
+            mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
+                    width, height, mVideoSize);
 
-                if (swappedDimensions) {
-                    rotatedPreviewWidth = height;
-                    rotatedPreviewHeight = width;
-                    maxPreviewWidth = displaySize.y;
-                    maxPreviewHeight = displaySize.x;
-                }
+            // We fit the aspect ratio of TextureView to the size of preview we picked.
+            int orientation = getResources().getConfiguration().orientation;
+            if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                mTextureView.setAspectRatio(
+                        mPreviewSize.getWidth(), mPreviewSize.getHeight());
+            } else {
+                mTextureView.setAspectRatio(
+                        mPreviewSize.getHeight(), mPreviewSize.getWidth());
+            }
 
-                if (maxPreviewWidth > MAX_PREVIEW_WIDTH) {
-                    maxPreviewWidth = MAX_PREVIEW_WIDTH;
-                }
+            // Check if the flash is supported.
+            Boolean available = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
+            mFlashSupported = available == null ? false : available;
 
-                if (maxPreviewHeight > MAX_PREVIEW_HEIGHT) {
-                    maxPreviewHeight = MAX_PREVIEW_HEIGHT;
-                }
-
-                // Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
-                // bus' bandwidth limitation, resulting in gorgeous previews but the storage of
-                // garbage capture data.
-
-                mPreviewSize =Utils.chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
-                        rotatedPreviewWidth, rotatedPreviewHeight, maxPreviewWidth,
-                        maxPreviewHeight, largest);
-
-                // We fit the aspect ratio of TextureView to the size of preview we picked.
-                int orientation = getResources().getConfiguration().orientation;
-                if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                    mTextureView.setAspectRatio(
-                            mPreviewSize.getWidth(), mPreviewSize.getHeight());
-                } else {
-                    mTextureView.setAspectRatio(
-                            mPreviewSize.getHeight(), mPreviewSize.getWidth());
-                }
-
-                // Check if the flash is supported.
-                Boolean available = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
-                mFlashSupported = available == null ? false : available;
-
-                return;
+            return;
 
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -367,6 +346,55 @@ public class FrontBackFlashCaptureImage extends AppCompatActivity implements Vie
             // Currently an NPE is thrown when the Camera2API is used but not supported on the
             // device this code runs.
 
+        }
+    }
+
+    /**
+     * In this sample, we choose a video size with 3x4 aspect ratio. Also, we don't use sizes
+     * larger than 1080p, since MediaRecorder cannot handle such a high-resolution video.
+     *
+     * @param choices The list of available sizes
+     * @return The video size
+     */
+    private static Size chooseVideoSize(Size[] choices) {
+        for (Size size : choices) {
+            if (size.getWidth() == size.getHeight() * 4 / 3 && size.getWidth() <= 1080) {
+                return size;
+            }
+        }
+        Log.e(TAG, "Couldn't find any suitable video size");
+        return choices[choices.length - 1];
+    }
+
+    /**
+     * Given {@code choices} of {@code Size}s supported by a camera, chooses the smallest one whose
+     * width and height are at least as large as the respective requested values, and whose aspect
+     * ratio matches with the specified value.
+     *
+     * @param choices     The list of sizes that the camera supports for the intended output class
+     * @param width       The minimum desired width
+     * @param height      The minimum desired height
+     * @param aspectRatio The aspect ratio
+     * @return The optimal {@code Size}, or an arbitrary one if none were big enough
+     */
+    private static Size chooseOptimalSize(Size[] choices, int width, int height, Size aspectRatio) {
+        // Collect the supported resolutions that are at least as big as the preview Surface
+        List<Size> bigEnough = new ArrayList<>();
+        int w = aspectRatio.getWidth();
+        int h = aspectRatio.getHeight();
+        for (Size option : choices) {
+            if (option.getHeight() == option.getWidth() * h / w &&
+                    option.getWidth() >= width && option.getHeight() >= height) {
+                bigEnough.add(option);
+            }
+        }
+
+        // Pick the smallest of those, assuming we found any
+        if (bigEnough.size() > 0) {
+            return Collections.min(bigEnough, new RecordVideo.CompareSizesByArea());
+        } else {
+            Log.e(TAG, "Couldn't find any suitable preview size");
+            return choices[0];
         }
     }
 
@@ -443,7 +471,8 @@ public class FrontBackFlashCaptureImage extends AppCompatActivity implements Vie
                     if (afState == null) {
                         captureStillPicture();
                     } else if (CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED == afState ||
-                            CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED == afState) {
+                            CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED == afState ||
+                            CaptureResult.CONTROL_AF_STATE_INACTIVE == afState) {
                         // CONTROL_AE_STATE can be null on some devices
                         Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
                         if (aeState == null ||
@@ -509,11 +538,11 @@ public class FrontBackFlashCaptureImage extends AppCompatActivity implements Vie
             setAutoFlash(captureBuilder);
 
             // Orientation
-            int rotation =getWindowManager().getDefaultDisplay().getRotation();
+            int rotation = getWindowManager().getDefaultDisplay().getRotation();
 
-            if(cameraType==1){
+            if (cameraType == 1) {
                 captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, INVERSE_ORIENTATIONS.get(rotation));
-            }else {
+            } else {
                 captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
             }
 
@@ -524,7 +553,7 @@ public class FrontBackFlashCaptureImage extends AppCompatActivity implements Vie
                 public void onCaptureCompleted(@NonNull CameraCaptureSession session,
                                                @NonNull CaptureRequest request,
                                                @NonNull TotalCaptureResult result) {
-                    Toast.makeText(getApplicationContext(),"Saved: " + mFile,Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext(), "Saved: " + mFile, Toast.LENGTH_SHORT).show();
                     Log.d(TAG, mFile.toString());
                     unlockFocus();
                     createCameraPreviewSession();
